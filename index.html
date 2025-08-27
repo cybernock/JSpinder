@@ -1,0 +1,1200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Get all endpoints from JavaScript files on any website">
+  <title>JSpider - Enhanced</title>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      --card-bg: rgba(255, 255, 255, 0.05);
+      --border-glow: rgba(13, 202, 240, 0.4);
+      --main-text: #f0f0f0;
+      --accent: #0dcaf0;
+      --success: #00ff96;
+      --warning: #ffa500;
+      --error: #ff6b6b;
+      --font: "Fira Code", monospace;
+      --glass-blur: blur(15px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg-gradient);
+      background-size: 400% 400%;
+      animation: bgFade 15s ease infinite;
+      color: var(--main-text);
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 0 10px;
+    }
+
+    @keyframes bgFade {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .wrapper {
+      max-width: 1200px;
+      margin: auto;
+      padding: 2rem;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(to right, #0dcaf0, #ffffff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 12px rgba(13, 202, 240, 0.3);
+      text-align: center;
+    }
+
+    header p {
+      color: #ccc;
+      margin-bottom: 1rem;
+      text-align: center;
+    }
+
+    .tagline {
+      color: var(--accent);
+      font-size: 1.1rem;
+      margin-top: 5px;
+      opacity: 0.9;
+      font-style: italic;
+      text-align: center;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 12px;
+      margin: 2rem 0;
+      flex-wrap: wrap;
+      backdrop-filter: var(--glass-blur);
+    }
+
+    .input-group input {
+      flex: 1;
+      min-width: 300px;
+      font-family: var(--font);
+      font-size: 1rem;
+      padding: 16px 20px;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      background-color: var(--card-bg);
+      color: var(--main-text);
+      outline: none;
+      transition: all 0.3s ease;
+      backdrop-filter: var(--glass-blur);
+      box-shadow: inset 0 0 5px rgba(255,255,255,0.1);
+    }
+
+    .input-group input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 12px var(--accent);
+    }
+
+    .scan-button {
+      background: linear-gradient(45deg, var(--accent), #00bfff);
+      color: #000;
+      font-weight: 600;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 12px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(13, 202, 240, 0.4);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scan-button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 25px rgba(13, 202, 240, 0.6);
+    }
+
+    .scan-button:active {
+      transform: translateY(1px);
+    }
+
+    .scan-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .progress-container {
+      margin: 1rem 0;
+      display: none;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--success));
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin: 2rem 0;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .stats-container.visible {
+      opacity: 1;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 1rem;
+      border: 1px solid var(--border-glow);
+      backdrop-filter: var(--glass-blur);
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+
+    .status {
+      font-size: 1rem;
+      color: #aaa;
+      margin-bottom: 1rem;
+      font-style: italic;
+      text-align: center;
+      padding: 0.5rem;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.2);
+    }
+
+    .status.success { color: var(--success); }
+    .status.warning { color: var(--warning); }
+    .status.error { color: var(--error); }
+
+    .filter-section {
+      margin: 20px 0;
+      display: none;
+    }
+
+    .filter-controls {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .filter-input {
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid rgba(13, 202, 240, 0.4);
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      color: #fff;
+      flex: 1;
+      min-width: 250px;
+      font-family: inherit;
+      font-size: 1rem;
+      outline: none;
+      transition: 0.3s ease;
+    }
+
+    .filter-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 10px rgba(13, 202, 240, 0.3);
+    }
+
+    .filter-options {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .filter-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(255,255,255,0.05);
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.1);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .filter-option:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: var(--accent);
+    }
+
+    .filter-option input[type="checkbox"] {
+      accent-color: var(--accent);
+    }
+
+    .results {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid var(--border-glow);
+      backdrop-filter: var(--glass-blur);
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      border-color: var(--accent);
+      box-shadow: 0 0 30px rgba(13, 202, 240, 0.3);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .card h3 {
+      color: var(--accent);
+      font-size: 1.1rem;
+      word-break: break-word;
+      margin: 0;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .card-action {
+      background: rgba(13, 202, 240, 0.1);
+      border: 1px solid rgba(13, 202, 240, 0.3);
+      border-radius: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      color: #0dcaf0;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .card-action:hover {
+      background: rgba(13, 202, 240, 0.2);
+      color: #fff;
+    }
+
+    .endpoint-count {
+      background: rgba(0, 255, 150, 0.2);
+      color: var(--success);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .card ol {
+      list-style: none;
+      counter-reset: line-number;
+      padding: 0;
+      margin: 0.5rem 0;
+    }
+
+    .card ol li {
+      counter-increment: line-number;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+      line-height: 1.4;
+      color: #d8ffe9;
+      word-break: break-word;
+      position: relative;
+      padding-left: 36px;
+      padding: 8px 8px 8px 36px;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .card ol li:hover {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .card ol li::before {
+      content: counter(line-number);
+      position: absolute;
+      left: 8px;
+      color: #6fbff0;
+      font-size: 0.9rem;
+      user-select: none;
+      opacity: 0.6;
+      text-align: right;
+      min-width: 24px;
+    }
+
+    .endpoint-text {
+      flex-grow: 1;
+      user-select: text;
+      font-size: 0.95rem;
+      white-space: pre-wrap;
+    }
+
+    .copy-btn {
+      background: rgba(13, 202, 240, 0.1);
+      border: 1px solid rgba(13, 202, 240, 0.3);
+      border-radius: 8px;
+      padding: 6px 8px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      color: #0dcaf0;
+      transition: all 0.2s ease-in-out;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 10px rgba(0, 255, 255, 0.05);
+      min-width: 32px;
+    }
+
+    .copy-btn:hover {
+      background: rgba(13, 202, 240, 0.2);
+      border-color: rgba(13,202,240,0.5);
+      color: #fff;
+      box-shadow: 0 0 10px rgba(13, 202, 240, 0.4);
+      transform: scale(1.05);
+    }
+
+    .copy-btn:active {
+      transform: scale(0.95);
+      box-shadow: none;
+    }
+
+    .copy-icon {
+      width: 16px;
+      height: 16px;
+      stroke: currentColor;
+      fill: none;
+    }
+
+    .copy-btn.copied {
+      background: rgba(0, 255, 150, 0.2);
+      border-color: rgba(0, 255, 150, 0.6);
+      color: #75ffaa;
+      box-shadow: 0 0 12px rgba(0, 255, 150, 0.5);
+    }
+
+    .export-actions {
+      display: flex;
+      gap: 12px;
+      margin: 30px 0 20px;
+      justify-content: center;
+      flex-wrap: wrap;
+      backdrop-filter: blur(12px);
+    }
+
+    .export-actions button {
+      background: rgba(13, 202, 240, 0.1);
+      border: 1px solid rgba(13, 202, 240, 0.4);
+      color: #0dcaf0;
+      font-weight: bold;
+      padding: 12px 24px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-family: inherit;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .export-actions button:hover {
+      background: rgba(13, 202, 240, 0.25);
+      color: white;
+      box-shadow: 0 0 16px rgba(13, 202, 240, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .export-actions button:active {
+      transform: scale(0.96);
+      box-shadow: none;
+    }
+
+    .footer {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #888;
+      margin: 4rem 0 2rem;
+      padding: 2rem 0;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      .wrapper { padding: 1rem; }
+      
+      .input-group {
+        flex-direction: column;
+      }
+
+      .input-group input {
+        min-width: unset;
+        width: 100%;
+      }
+
+      header h1 { font-size: 2rem; }
+      
+      .stats-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-container {
+        grid-template-columns: 1fr;
+      }
+      
+      .export-actions {
+        flex-direction: column;
+      }
+      
+      .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card {
+      animation: fadeInUp 0.5s ease forwards;
+    }
+
+    .card:nth-child(1) { animation-delay: 0.1s; }
+    .card:nth-child(2) { animation-delay: 0.2s; }
+    .card:nth-child(3) { animation-delay: 0.3s; }
+    .card:nth-child(4) { animation-delay: 0.4s; }
+    .card:nth-child(5) { animation-delay: 0.5s; }
+
+    /* Loading animation */
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .loading {
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    /* Tooltip */
+    [data-tooltip] {
+      position: relative;
+    }
+
+    [data-tooltip]:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.9);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      white-space: nowrap;
+      z-index: 1000;
+      margin-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header>
+      <h1>🕷️ JSpider</h1>
+      <p class="tagline">Smart crawler for hidden endpoints.</p>
+      <p>Crawl and extract hidden API endpoints and URLs from JavaScript files and HTML source code — directly in your browser.</p>
+      <p>Built for recon - Fast, lightweight and 100% client-side.</p>
+    </header>
+
+    <section class="input-group">
+      <input id="urlInput" type="url" placeholder="https://example.com" autofocus required/>
+      <button id="scanBtn" class="scan-button">🚀 Scan</button>
+    </section>
+
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+    </div>
+
+    <div class="stats-container">
+      <div class="stat-card">
+        <div class="stat-number" id="totalEndpoints">0</div>
+        <div class="stat-label">Total Endpoints</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="jsFilesScanned">0</div>
+        <div class="stat-label">JS Files Scanned</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="uniqueDomains">0</div>
+        <div class="stat-label">Unique Domains</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="scanTime">0s</div>
+        <div class="stat-label">Scan Time</div>
+      </div>
+    </div>
+
+    <section class="filter-section">
+      <div class="filter-controls">
+        <input class="filter-input" id="filterInput" placeholder="🔎 Filter endpoints..." />
+        <div class="filter-options">
+          <label class="filter-option">
+            <input type="checkbox" id="showApiOnly" />
+            <span>API endpoints only</span>
+          </label>
+          <label class="filter-option">
+            <input type="checkbox" id="showExternalOnly" />
+            <span>External URLs only</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <div id="status" class="status">Ready to scan...</div>
+
+    <section id="results" class="results"></section>
+
+    <section id="actions" class="export-actions" style="display: none;">
+      <button id="exportTxt">📥 Export .txt</button>
+      <button id="exportJson">📥 Export .json</button>
+      <button id="copyAll">📋 Copy All</button>
+    </section>
+
+    <footer class="footer">
+      <p>
+        Made with ❤️ by
+        <a href="https://www.linkedin.com/in/iamshafayat" target="_blank" rel="noopener noreferrer">
+        Shafayat Ahmed Alif</a>
+        for Security Researchers
+      </p>
+      <p style="margin-top: 1rem; font-size: 0.8rem; opacity: 0.7;">
+        Enhanced version with improved UX, statistics, and filtering
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    const scanBtn = document.getElementById("scanBtn");
+    const urlInput = document.getElementById("urlInput");
+    const results = document.getElementById("results");
+    const status = document.getElementById("status");
+    const exportActions = document.getElementById("actions");
+    const exportTxt = document.getElementById("exportTxt");
+    const exportJson = document.getElementById("exportJson");
+    const copyAll = document.getElementById("copyAll");
+    const progressContainer = document.querySelector('.progress-container');
+    const progressFill = document.querySelector('.progress-fill');
+    const statsContainer = document.querySelector('.stats-container');
+
+    // Statistics elements
+    const totalEndpointsEl = document.getElementById('totalEndpoints');
+    const jsFilesScannedEl = document.getElementById('jsFilesScanned');
+    const uniqueDomainsEl = document.getElementById('uniqueDomains');
+    const scanTimeEl = document.getElementById('scanTime');
+
+    const allResults = [];
+    const scannedJs = new Set();
+    let scanStartTime = 0;
+
+    const proxyUrl = (url) => `https://corsproxy.io/?${encodeURIComponent(url)}`;
+
+    // Enhanced regex for better endpoint detection
+    const endpointRegex = new RegExp(
+      `(?:"|')((?:[a-zA-Z]{1,10}://|//)[^"']*?|(?:/|\\./|\\.\\./)[^"'\\s<>]+|[a-zA-Z0-9_\\-/]+\\.[a-z]{1,5}(?:\\?[^"'\\s]*)?)(?:"|')`,
+      "g"
+    );
+
+    // API-specific patterns
+    const apiPatterns = [
+      /\/api\//i,
+      /\/v[0-9]+\//i,
+      /\/graphql/i,
+      /\/rest\//i,
+      /\.json$/i,
+      /\/endpoint/i,
+      /\/service/i
+    ];
+
+    // Enhanced exclusions
+    const excludedExtensions = [
+      ".woff", ".woff2", ".ttf", ".otf", ".eot", ".sfnt",
+      ".png", ".jpg", ".jpeg", ".svg", ".gif", ".ico", ".webp", ".bmp", ".apng", ".tif", ".tiff",
+      ".css", ".less", ".sass", ".scss",
+      ".map", ".txt", ".md",
+      ".mp4", ".m4v", ".webm", ".mp3", ".wav", ".ogg", ".flac",
+      ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".csv", ".rtf",
+      ".zip", ".rar", ".tar", ".gz", ".7z",
+      ".exe", ".apk", ".ipa", ".dmg", ".bin", ".jar", ".class",
+      ".swf", ".log", ".tmp", ".bak", ".old"
+    ];
+
+    const externalDomainsToIgnore = [
+      "facebook.com", "instagram.com", "twitter.com", "tiktok.com", "linkedin.com",
+      "youtube.com", "vimeo.com", "pinterest.com", "cdn.jsdelivr.net", "cdnjs.cloudflare.com",
+      "unpkg.com", "bootstrapcdn.com", "maxcdn.bootstrapcdn.com",
+      "fonts.googleapis.com", "fonts.gstatic.com",
+      "gstatic.com", "google.com", "googleapis.com",
+      "googletagmanager.com", "googlesyndication.com", "google-analytics.com", "gtag/js",
+      "doubleclick.net", "cookielaw.org", "cdn.adobedtm.com", "scene7.com",
+      "akamaihd.net", "brightcove.net", "vidyard.com", "wistia.com",
+      "newrelic.com", "datadoghq.com", "cloudflareinsights.com",
+      "optimizely.com", "hotjar.com", "segment.com", "intercom.io",
+      "salesforce.com", "liveperson.net", "zendesk.com", "helix-rum-js",
+      "sentry.io", "mixpanel.com", "disqus.com", "addthis.com", "sharethis.com", "criteo.com",
+      "tracking.", "pixel.", "collect.", "recaptcha.net", "lazcdn.com", "alicdn.com"
+    ];
+
+    const disallowedPrefixes = [
+      "js://", "markup://", "aura://", "java://", "css://",
+      "object://", "text://", "xml://", "apex://", "apexclass://",
+      "resource://", "data://", "mailto:", "tel:", "blob:", "file://",
+      "intent://", "chrome-extension://", "about:", "chrome://"
+    ];
+
+    function updateStatus(message, type = '') {
+      status.innerText = message;
+      status.className = `status ${type}`;
+    }
+
+    function updateProgress(percent) {
+      progressFill.style.width = `${percent}%`;
+    }
+
+    function updateStats() {
+      const totalEndpoints = allResults.reduce((sum, result) => sum + result.endpoints.length, 0);
+      const jsFiles = allResults.filter(result => result.jsUrl !== "Visible HTML Links").length;
+      const domains = new Set();
+      
+      allResults.forEach(result => {
+        result.endpoints.forEach(endpoint => {
+          try {
+            if (endpoint.startsWith('http')) {
+              domains.add(new URL(endpoint).hostname);
+            }
+          } catch {}
+        });
+      });
+
+      const scanTime = scanStartTime ? ((Date.now() - scanStartTime) / 1000).toFixed(1) : 0;
+
+      totalEndpointsEl.textContent = totalEndpoints;
+      jsFilesScannedEl.textContent = jsFiles;
+      uniqueDomainsEl.textContent = domains.size;
+      scanTimeEl.textContent = `${scanTime}s`;
+
+      if (totalEndpoints > 0) {
+        statsContainer.classList.add('visible');
+      }
+    }
+
+    scanBtn.addEventListener("click", async () => {
+      let siteUrl = urlInput.value.trim();
+      if (!siteUrl) {
+        alert("Enter a valid full URL (e.g., https://example.com)");
+        return;
+      }
+      if (!/^https?:\/\//i.test(siteUrl)) {
+        siteUrl = "https://" + siteUrl;
+      }
+
+      scanBtn.disabled = true;
+      scanBtn.classList.add('loading');
+      results.innerHTML = "";
+      allResults.length = 0;
+      scannedJs.clear();
+      exportActions.style.display = "none";
+      statsContainer.classList.remove('visible');
+      progressContainer.style.display = 'block';
+      updateProgress(0);
+      scanStartTime = Date.now();
+
+      try {
+        updateStatus("Fetching site...", 'warning');
+        const html = await fetchHtml(siteUrl);
+        const jsFiles = extractJSUrls(html, siteUrl);
+
+        let completed = 0;
+        const totalFiles = jsFiles.length;
+
+        updateStatus(`Found ${totalFiles} JavaScript files to scan...`, 'warning');
+
+        await Promise.all(
+          jsFiles.map(async (jsUrl, index) => {
+            if (scannedJs.has(jsUrl)) return;
+            scannedJs.add(jsUrl);
+
+            updateStatus(`Scanning: ${jsUrl.split('/').pop() || jsUrl}`);
+            const endpoints = await extractEndpointsFromJS(jsUrl);
+            allResults.push({ jsUrl, endpoints });
+            display(jsUrl, endpoints);
+            completed++;
+            
+            const percent = Math.round((completed / totalFiles) * 100);
+            updateProgress(percent);
+            updateStats();
+          })
+        );
+
+        updateStatus("Scan complete!", 'success');
+        exportActions.style.display = allResults.length ? "flex" : "none";
+        
+        const filterSection = document.querySelector(".filter-section");
+        if (filterSection) {
+          filterSection.style.display = "block";
+        }
+
+        setTimeout(() => {
+          progressContainer.style.display = 'none';
+        }, 1000);
+
+      } catch (e) {
+        console.error(e);
+        updateStatus("Error occurred. Try another URL or check CORS proxy.", 'error');
+      }
+
+      scanBtn.disabled = false;
+      scanBtn.classList.remove('loading');
+      updateStats();
+    });
+
+    async function fetchHtml(baseUrl) {
+      const res = await fetch(proxyUrl(baseUrl));
+      if (!res.ok) throw new Error("Failed to load HTML");
+
+      const html = await res.text();
+      const rawHtmlTargets = [];
+
+      const hrefMatches = [...html.matchAll(/<(a|link)[^>]+href=["']([^"']+)["']/gi)];
+      rawHtmlTargets.push(...hrefMatches.map(m => m[2]));
+
+      const scriptContentMatches = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)];
+      scriptContentMatches.forEach(match => {
+        const inlineCode = match[1] || "";
+        const inlineEndpoints = [...inlineCode.matchAll(endpointRegex)]
+          .map(m => m[1])
+          .filter(url => filterUrl(url));
+        rawHtmlTargets.push(...inlineEndpoints);
+      });
+
+      const filteredHtmlLinks = [];
+      const jsToScanFromLinks = [];
+
+      rawHtmlTargets.forEach(link => {
+        if (!link) return;
+        const lowered = link.toLowerCase();
+        const isFull = lowered.startsWith("http://") || lowered.startsWith("https://");
+        const isJsOrJson = lowered.endsWith(".js") || lowered.endsWith(".json");
+
+        if (!isFull && isJsOrJson) {
+          try {
+            const fullUrl = new URL(link, baseUrl).href;
+            jsToScanFromLinks.push(fullUrl);
+          } catch {}
+          return;
+        }
+
+        if (filterUrl(lowered)) {
+          filteredHtmlLinks.push(link);
+        }
+      });
+
+      if (filteredHtmlLinks.length > 0) {
+        const dedup = [...new Set(filteredHtmlLinks)];
+        allResults.push({ jsUrl: "Visible HTML Links", endpoints: dedup });
+        display("Visible HTML Links", dedup);
+      }
+
+      // Scan JS discovered via href in parallel
+      await Promise.all(
+        jsToScanFromLinks.map(async (jsUrl) => {
+          if (scannedJs.has(jsUrl)) return;
+          scannedJs.add(jsUrl);
+
+          updateStatus(`Scanning [href] JS: ${jsUrl.split('/').pop() || jsUrl}`);
+          const endpoints = await extractEndpointsFromJS(jsUrl);
+          allResults.push({ jsUrl, endpoints });
+          display(jsUrl, endpoints);
+        })
+      );
+
+      return html;
+    }
+
+    function extractJSUrls(html, baseUrl) {
+      const re = /<script[^>]+src=["']([^"']+)["']/gi;
+      let match;
+      const urls = [];
+      const baseHost = new URL(baseUrl).hostname.toLowerCase();
+
+      while ((match = re.exec(html)) !== null) {
+        try {
+          const fullUrl = new URL(match[1], baseUrl).href;
+          const lowered = fullUrl.toLowerCase();
+          const host = new URL(fullUrl).hostname.toLowerCase();
+
+          const sameSite = host === baseHost || host.endsWith("." + baseHost);
+          if (!sameSite || !filterUrl(lowered)) continue;
+
+          urls.push(fullUrl);
+        } catch {}
+      }
+
+      return [...new Set(urls)];
+    }
+
+    async function extractEndpointsFromJS(jsUrl) {
+      try {
+        const res = await fetch(proxyUrl(jsUrl));
+        if (!res.ok) {
+          console.warn("Could not fetch (status " + res.status + "):", jsUrl);
+          return [];
+        }
+        const code = await res.text();
+        const matches = [...code.matchAll(endpointRegex)];
+        const raw = matches.map(m => m[1]);
+        const filtered = [...new Set(raw.filter(url => filterUrl(url)))];
+        return filtered;
+      } catch (e) {
+        console.warn("Could not fetch:", jsUrl, e);
+        return [];
+      }
+    }
+
+    function filterUrl(url) {
+      const lowered = (url || "").toLowerCase();
+      return (
+        lowered &&
+        !excludedExtensions.some(ext => lowered.endsWith(ext)) &&
+        !externalDomainsToIgnore.some(domain => lowered.includes(domain)) &&
+        !disallowedPrefixes.some(prefix => lowered.startsWith(prefix)) &&
+        !lowered.includes("base64") &&
+        lowered.length < 300
+      );
+    }
+
+    function isApiEndpoint(url) {
+      return apiPatterns.some(pattern => pattern.test(url));
+    }
+
+    function isExternalUrl(url) {
+      try {
+        return url.startsWith('http://') || url.startsWith('https://');
+      } catch {
+        return false;
+      }
+    }
+
+    function display(jsUrl, endpoints) {
+      const container = document.createElement("div");
+      container.className = "card";
+
+      if (jsUrl === "Visible HTML Links") {
+        container.classList.add("html-section");
+      }
+
+      // Card header with title and actions
+      const header = document.createElement("div");
+      header.className = "card-header";
+
+      const title = document.createElement("h3");
+      title.innerText = jsUrl;
+
+      const headerActions = document.createElement("div");
+      headerActions.className = "card-actions";
+
+      if (endpoints && endpoints.length > 0) {
+        const endpointCount = document.createElement("span");
+        endpointCount.className = "endpoint-count";
+        endpointCount.textContent = `${endpoints.length} endpoints`;
+        headerActions.appendChild(endpointCount);
+
+        const copyAllBtn = document.createElement("button");
+        copyAllBtn.className = "card-action";
+        copyAllBtn.textContent = "Copy All";
+        copyAllBtn.setAttribute('data-tooltip', 'Copy all endpoints from this file');
+        copyAllBtn.addEventListener("click", () => {
+          const allEndpoints = endpoints.join('\n');
+          copyToClipboard(allEndpoints);
+          copyAllBtn.textContent = "Copied!";
+          setTimeout(() => {
+            copyAllBtn.textContent = "Copy All";
+          }, 2000);
+        });
+        headerActions.appendChild(copyAllBtn);
+      }
+
+      header.appendChild(title);
+      header.appendChild(headerActions);
+      container.appendChild(header);
+
+      if (!endpoints || endpoints.length === 0) {
+        const fallback = document.createElement("div");
+        fallback.style.cssText = "color: #888; font-style: italic; padding: 1rem; text-align: center;";
+        fallback.innerText = "No endpoints found in this file.";
+        container.appendChild(fallback);
+        results.appendChild(container);
+        return;
+      }
+
+      const list = document.createElement("ol");
+
+      endpoints.forEach((endpoint) => {
+        const item = document.createElement("li");
+        item.setAttribute('data-endpoint', endpoint);
+        
+        const endpointSpan = document.createElement("span");
+        endpointSpan.textContent = endpoint;
+        endpointSpan.className = "endpoint-text";
+
+        // Add visual indicators
+        if (isApiEndpoint(endpoint)) {
+          endpointSpan.style.color = '#00ff96';
+          endpointSpan.setAttribute('data-tooltip', 'API Endpoint');
+        }
+        
+        if (isExternalUrl(endpoint)) {
+          endpointSpan.style.borderLeft = '2px solid #ffa500';
+          endpointSpan.style.paddingLeft = '8px';
+        }
+
+        const copyBtn = document.createElement("button");
+        copyBtn.innerHTML = `
+          <svg class="copy-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+              d="M8 8h11M8 12h8M8 16h6M5 4h14a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/>
+          </svg>`;
+        copyBtn.className = "copy-btn";
+        copyBtn.setAttribute('data-tooltip', 'Copy endpoint');
+
+        copyBtn.addEventListener("click", async () => {
+          await copyToClipboard(endpoint);
+          copyBtn.classList.add("copied");
+          setTimeout(() => {
+            copyBtn.classList.remove("copied");
+          }, 1000);
+        });
+
+        item.appendChild(endpointSpan);
+        item.appendChild(copyBtn);
+        list.appendChild(item);
+      });
+
+      container.appendChild(list);
+      results.appendChild(container);
+    }
+
+    async function copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        // Fallback for older browsers
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+    }
+
+    // Export functionality
+    exportTxt.addEventListener("click", () => {
+      const content = allResults.map(entry => {
+        return `${entry.jsUrl}\n${'='.repeat(entry.jsUrl.length)}\n${entry.endpoints.join("\n")}\n`;
+      }).join("\n\n");
+      downloadFile("jspider-endpoints.txt", content, "text/plain");
+    });
+
+    exportJson.addEventListener("click", () => {
+      const exportData = {
+        timestamp: new Date().toISOString(),
+        totalEndpoints: allResults.reduce((sum, result) => sum + result.endpoints.length, 0),
+        scanResults: allResults,
+        statistics: {
+          jsFiles: allResults.filter(r => r.jsUrl !== "Visible HTML Links").length,
+          htmlLinks: allResults.find(r => r.jsUrl === "Visible HTML Links")?.endpoints.length || 0,
+          uniqueDomains: [...new Set(allResults.flatMap(r => 
+            r.endpoints.filter(e => e.startsWith('http')).map(e => {
+              try { return new URL(e).hostname; } catch { return null; }
+            }).filter(Boolean)
+          ))].length
+        }
+      };
+      const json = JSON.stringify(exportData, null, 2);
+      downloadFile("jspider-results.json", json, "application/json");
+    });
+
+    copyAll.addEventListener("click", async () => {
+      const allEndpoints = allResults.flatMap(entry => entry.endpoints).join('\n');
+      await copyToClipboard(allEndpoints);
+      
+      copyAll.textContent = "Copied!";
+      copyAll.style.background = "rgba(0, 255, 150, 0.2)";
+      copyAll.style.color = "#75ffaa";
+      
+      setTimeout(() => {
+        copyAll.textContent = "📋 Copy All";
+        copyAll.style.background = "";
+        copyAll.style.color = "";
+      }, 2000);
+    });
+
+    function downloadFile(filename, content, type) {
+      const blob = new Blob([content], { type });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(link.href);
+        document.body.removeChild(link);
+      }, 100);
+    }
+
+    // Enhanced filtering system
+    const filterInputEl = document.getElementById("filterInput");
+    const showApiOnly = document.getElementById("showApiOnly");
+    const showExternalOnly = document.getElementById("showExternalOnly");
+
+    function applyFilters() {
+      const keyword = filterInputEl.value.toLowerCase();
+      const apiOnly = showApiOnly.checked;
+      const externalOnly = showExternalOnly.checked;
+
+      document.querySelectorAll("[data-endpoint]").forEach((item) => {
+        const endpoint = item.getAttribute('data-endpoint');
+        const matchesKeyword = !keyword || endpoint.toLowerCase().includes(keyword);
+        const matchesApi = !apiOnly || isApiEndpoint(endpoint);
+        const matchesExternal = !externalOnly || isExternalUrl(endpoint);
+        
+        const shouldShow = matchesKeyword && matchesApi && matchesExternal;
+        item.style.display = shouldShow ? "flex" : "none";
+      });
+
+      // Hide cards with no visible endpoints
+      document.querySelectorAll(".card").forEach((card) => {
+        const items = card.querySelectorAll("ol li");
+        if (!items.length) return;
+        
+        const anyVisible = Array.from(items).some(li => li.style.display !== "none");
+        card.style.display = anyVisible ? "" : "none";
+      });
+
+      // Update visible count
+      const visibleCount = document.querySelectorAll('[data-endpoint]:not([style*="display: none"])').length;
+      const totalCount = document.querySelectorAll('[data-endpoint]').length;
+      
+      if (totalCount > 0) {
+        updateStatus(`Showing ${visibleCount} of ${totalCount} endpoints`, 'success');
+      }
+    }
+
+    if (filterInputEl) {
+      filterInputEl.addEventListener("input", applyFilters);
+      showApiOnly.addEventListener("change", applyFilters);
+      showExternalOnly.addEventListener("change", applyFilters);
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch(e.key) {
+          case 'Enter':
+            if (document.activeElement === urlInput) {
+              e.preventDefault();
+              scanBtn.click();
+            }
+            break;
+          case '/':
+            e.preventDefault();
+            filterInputEl.focus();
+            break;
+        }
+      }
+    });
+
+    // Auto-focus URL input on page load
+    setTimeout(() => {
+      urlInput.focus();
+    }, 100);
+
+    console.log('🕷️ JSpider Enhanced - Ready to crawl!');
+    console.log('💡 Tips:');
+    console.log('  • Ctrl/Cmd + Enter to start scan');
+    console.log('  • Ctrl/Cmd + / to focus filter');
+    console.log('  • Look for green endpoints (API patterns)');
+    console.log('  • Orange border indicates external URLs');
+  </script>
+</body>
+</html>
